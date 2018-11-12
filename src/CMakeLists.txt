@@ -40,6 +40,22 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "SunOS")
   target_link_libraries(benchmark kstat)
 endif()
 
+add_library(benchmark-static STATIC ${SOURCE_FILES})
+set_target_properties(benchmark-static PROPERTIES
+  OUTPUT_NAME "benchmark"
+  VERSION ${GENERIC_LIB_VERSION}
+  SOVERSION ${GENERIC_LIB_SOVERSION}
+)
+target_include_directories(benchmark PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
+    )
+# Link threads.
+target_link_libraries(benchmark-static  ${BENCHMARK_CXX_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+find_library(LIBRT rt)
+if(LIBRT)
+  target_link_libraries(benchmark-static ${LIBRT})
+endif()
+
 # Benchmark main library
 add_library(benchmark_main "benchmark_main.cc")
 set_target_properties(benchmark_main PROPERTIES
@@ -78,7 +94,7 @@ configure_file("${PROJECT_SOURCE_DIR}/cmake/benchmark.pc.in" "${pkg_config}" @ON
 if (BENCHMARK_ENABLE_INSTALL)
   # Install target (will install the library to specified CMAKE_INSTALL_PREFIX variable)
   install(
-    TARGETS benchmark benchmark_main
+    TARGETS benchmark benchmark-static benchmark_main
     EXPORT ${targets_export_name}
     ARCHIVE DESTINATION ${lib_install_dir}
     LIBRARY DESTINATION ${lib_install_dir}
